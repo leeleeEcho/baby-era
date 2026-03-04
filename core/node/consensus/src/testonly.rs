@@ -267,6 +267,7 @@ impl StateKeeper {
                     pubdata_params: Default::default(),
                     pubdata_limit: (self.protocol_version >= ProtocolVersionId::Version29)
                         .then_some(100_000),
+                    oracle_calldata: None,
                 },
                 number: self.last_batch,
                 first_l2_block_number: self.last_block,

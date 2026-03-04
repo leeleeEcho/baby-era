@@ -542,6 +542,7 @@ mod tests {
             first_l2_block: L2BlockParams::new(1000),
             pubdata_params: Default::default(),
             pubdata_limit: Some(100_000),
+            oracle_calldata: None,
         };
         actions_sender
             .push_action_unchecked(SyncAction::OpenBatch {

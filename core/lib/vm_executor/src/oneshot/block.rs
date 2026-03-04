@@ -275,6 +275,7 @@ impl<C: ContractsKind> OneshotEnvParameters<C> {
             fee_account: *operator_account.address(),
             enforced_base_fee,
             first_l2_block: next_block,
+            oracle_calldata: None,
         };
         Ok((system_env, l1_batch_env))
     }

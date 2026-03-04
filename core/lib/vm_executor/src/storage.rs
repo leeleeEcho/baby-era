@@ -94,6 +94,8 @@ pub fn l1_batch_params(
                 max_virtual_blocks_to_create: virtual_blocks,
                 interop_roots,
             },
+            // BabyDriver: Oracle calldata will be set by the State Keeper
+            oracle_calldata: None,
         },
     )
 }
