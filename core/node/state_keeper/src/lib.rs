@@ -15,6 +15,7 @@ pub mod executor;
 mod health;
 pub mod io;
 mod keeper;
+pub mod oracle_tx;
 mod mempool_actor;
 pub(crate) mod mempool_guard;
 pub mod metrics;
