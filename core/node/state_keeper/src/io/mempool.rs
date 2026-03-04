@@ -29,6 +29,8 @@ use zksync_types::{
 };
 use zksync_vm_executor::storage::{get_base_system_contracts_by_version_id, L1BatchParamsProvider};
 
+use baby_oracle_wiring::wiring::SharedOracleService;
+
 use crate::{
     io::{
         common::{load_pending_batch, poll_iters, IoCursor},
@@ -72,6 +74,8 @@ pub struct MempoolIO {
     pubdata_limit: u64,
     last_batch_protocol_version: Option<ProtocolVersionId>,
     settlement_layer: Option<SettlementLayer>,
+    /// BabyDriver: Shared Oracle service for price data injection.
+    oracle_service: Option<SharedOracleService>,
 }
 
 #[async_trait]
@@ -507,6 +511,7 @@ impl MempoolIO {
         l2_da_validator_address: Option<Address>,
         pubdata_type: PubdataType,
         settlement_layer: Option<SettlementLayer>,
+        oracle_service: Option<SharedOracleService>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             mempool,
@@ -528,6 +533,7 @@ impl MempoolIO {
             pubdata_limit: config.seal_criteria.max_pubdata_per_batch.0,
             last_batch_protocol_version: None,
             settlement_layer,
+            oracle_service,
         })
     }
 
@@ -726,6 +732,14 @@ impl MempoolIO {
     #[cfg(test)]
     pub fn set_last_batch_protocol_version(&mut self, protocol_version: ProtocolVersionId) {
         self.last_batch_protocol_version = Some(protocol_version);
+    }
+
+    /// BabyDriver: Get Oracle calldata from the shared service.
+    /// Returns None if Oracle is not configured or has no price data.
+    pub(crate) fn get_oracle_calldata(&self) -> Option<Vec<u8>> {
+        let service = self.oracle_service.as_ref()?;
+        let svc = service.lock().ok()?;
+        svc.encode_oracle_calldata()
     }
 }
 

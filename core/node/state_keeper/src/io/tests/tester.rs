@@ -161,6 +161,7 @@ impl Tester {
             Some(Default::default()),
             Default::default(),
             Some(SettlementLayer::L1(chain_id)),
+            None, // BabyDriver: no Oracle service in tests
         )
         .unwrap();
 

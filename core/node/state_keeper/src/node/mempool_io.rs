@@ -149,6 +149,7 @@ impl WiringLayer for MempoolIOLayer {
             input.l2_contracts.0.da_validator_addr,
             self.pubdata_type,
             input.settlement_mode.settlement_layer_for_sending_txs(),
+            None, // BabyDriver: Oracle service will be wired in later
         )?;
 
         // Create sealer.
