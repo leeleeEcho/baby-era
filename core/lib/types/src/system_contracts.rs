@@ -9,7 +9,9 @@ use zksync_system_constants::{
     L2_BRIDGEHUB_ADDRESS, L2_CHAIN_ASSET_HANDLER_ADDRESS, L2_GENESIS_UPGRADE_ADDRESS,
     L2_INTEROP_ROOT_STORAGE_ADDRESS, L2_MESSAGE_ROOT_ADDRESS, L2_MESSAGE_VERIFICATION_ADDRESS,
     L2_NATIVE_TOKEN_VAULT_ADDRESS, L2_WRAPPED_BASE_TOKEN_IMPL, MODEXP_PRECOMPILE_ADDRESS,
-    PUBDATA_CHUNK_PUBLISHER_ADDRESS, SECP256R1_VERIFY_PRECOMPILE_ADDRESS, SLOAD_CONTRACT_ADDRESS,
+    ORACLE_HUB_ADDRESS, DID_REGISTRY_ADDRESS, CREDENTIAL_REGISTRY_ADDRESS,
+    IDENTITY_VERIFIER_ADDRESS, PUBDATA_CHUNK_PUBLISHER_ADDRESS, SECP256R1_VERIFY_PRECOMPILE_ADDRESS,
+    SLOAD_CONTRACT_ADDRESS,
 };
 
 use crate::{
@@ -29,7 +31,7 @@ use crate::{
 pub const TX_NONCE_INCREMENT: U256 = U256([1, 0, 0, 0]); // 1
 pub const DEPLOYMENT_NONCE_INCREMENT: U256 = U256([0, 0, 1, 0]); // 2^128
 
-static SYSTEM_CONTRACT_LIST: [(&str, &str, Address, ContractLanguage); 40] = [
+static SYSTEM_CONTRACT_LIST: [(&str, &str, Address, ContractLanguage); 44] = [
     (
         "",
         "AccountCodeStorage",
@@ -260,6 +262,34 @@ static SYSTEM_CONTRACT_LIST: [(&str, &str, Address, ContractLanguage); 40] = [
         "../../l1-contracts/zkout/",
         "ChainAssetHandler",
         L2_CHAIN_ASSET_HANDLER_ADDRESS,
+        ContractLanguage::Sol,
+    ),
+    // BabyDriver: Oracle Hub system contract
+    (
+        "",
+        "OracleHub",
+        ORACLE_HUB_ADDRESS,
+        ContractLanguage::Sol,
+    ),
+    // BabyDriver: DID Registry system contract
+    (
+        "",
+        "DIDRegistry",
+        DID_REGISTRY_ADDRESS,
+        ContractLanguage::Sol,
+    ),
+    // BabyDriver: Credential Registry system contract
+    (
+        "",
+        "CredentialRegistry",
+        CREDENTIAL_REGISTRY_ADDRESS,
+        ContractLanguage::Sol,
+    ),
+    // BabyDriver: Identity Verifier system contract
+    (
+        "",
+        "IdentityVerifier",
+        IDENTITY_VERIFIER_ADDRESS,
         ContractLanguage::Sol,
     ),
 ];
