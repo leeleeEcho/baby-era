@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Context as _;
+use baby_oracle_wiring::{OracleConfig, OracleWiringLayer};
 use zksync_config::configs::{
     chain::{MempoolConfig, StateKeeperConfig},
     wallets,
@@ -138,6 +139,16 @@ impl WiringLayer for MempoolIOLayer {
             .get_singleton()
             .await
             .context("Get master pool")?;
+
+        // BabyDriver: Load Oracle config and start background price fetcher.
+        let oracle_service = {
+            let config_path = std::env::var("BABY_CONFIG_PATH")
+                .unwrap_or_else(|_| "config/baby-chain.toml".to_string());
+            let config = OracleConfig::load_from_file(&config_path);
+            let service = OracleWiringLayer::new(config).build();
+            Some(service)
+        };
+
         let io = MempoolIO::new(
             mempool_guard,
             batch_fee_input_provider,
@@ -149,7 +160,7 @@ impl WiringLayer for MempoolIOLayer {
             input.l2_contracts.0.da_validator_addr,
             self.pubdata_type,
             input.settlement_mode.settlement_layer_for_sending_txs(),
-            None, // BabyDriver: Oracle service will be wired in later
+            oracle_service,
         )?;
 
         // Create sealer.
