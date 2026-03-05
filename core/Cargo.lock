@@ -2173,6 +2173,7 @@ dependencies = [
  "serde_json",
  "sha3 0.10.8",
  "tokio",
+ "toml",
  "tracing",
 ]
 
@@ -15131,6 +15132,7 @@ dependencies = [
  "zksync_base_token_adjuster",
  "zksync_config",
  "zksync_contracts",
+ "zksync_crypto_primitives",
  "zksync_dal",
  "zksync_eth_client",
  "zksync_health_check",
