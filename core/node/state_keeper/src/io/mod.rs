@@ -252,4 +252,10 @@ pub trait StateKeeperIO: 'static + Send + Sync + fmt::Debug + IoSealCriteria {
     /// Loads state hash for the L1 batch with the specified number. The batch is guaranteed to be present
     /// in the storage.
     async fn load_batch_state_hash(&self, number: L1BatchNumber) -> anyhow::Result<H256>;
+
+    /// BabyDriver: Get Oracle calldata for the current batch.
+    /// Returns None if Oracle is not configured or has no data.
+    fn get_oracle_tx_calldata(&self) -> Option<Vec<u8>> {
+        None // default: no Oracle
+    }
 }

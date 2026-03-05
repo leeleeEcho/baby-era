@@ -709,6 +709,71 @@ impl StateKeeperInner {
         }
     }
 
+    /// BabyDriver: Process the Oracle price update transaction.
+    ///
+    /// Similar to `process_upgrade_tx()`, but failure does NOT block the batch.
+    /// Oracle tx is injected as the first (or second, after upgrade tx) transaction.
+    async fn process_oracle_tx(
+        &mut self,
+        batch_executor: &mut dyn BatchExecutor<OwnedStorage>,
+        updates_manager: &mut UpdatesManager,
+        oracle_calldata: Vec<u8>,
+    ) -> anyhow::Result<()> {
+        use crate::oracle_tx::build_oracle_update_tx;
+
+        let operator_address = updates_manager.fee_account_address();
+        let tx = build_oracle_update_tx(operator_address, oracle_calldata);
+
+        tracing::info!(
+            "Injecting Oracle price update tx into batch {}",
+            updates_manager.l1_batch_number()
+        );
+
+        let (seal_resolution, exec_result) = self
+            .process_one_tx(batch_executor, updates_manager, tx.clone())
+            .await?;
+
+        match &seal_resolution {
+            SealResolution::NoSeal | SealResolution::IncludeAndSeal => {
+                let TxExecutionResult::Success {
+                    tx_result,
+                    tx_metrics: tx_execution_metrics,
+                    call_tracer_result,
+                    ..
+                } = exec_result
+                else {
+                    tracing::warn!("Oracle tx execution was not successful, skipping");
+                    return Ok(());
+                };
+
+                if tx_result.result.is_failed() {
+                    tracing::warn!(
+                        "Oracle price update tx reverted: {:?}",
+                        tx_result.result
+                    );
+                    return Ok(());
+                }
+
+                updates_manager.extend_from_executed_transaction(
+                    tx,
+                    *tx_result,
+                    *tx_execution_metrics,
+                    call_tracer_result,
+                );
+
+                tracing::info!("Oracle price update tx executed successfully");
+            }
+            SealResolution::ExcludeAndSeal => {
+                tracing::warn!("Oracle tx caused ExcludeAndSeal, skipping");
+            }
+            SealResolution::Unexecutable(reason) => {
+                tracing::warn!("Oracle tx is unexecutable: {reason}, skipping");
+            }
+        }
+
+        Ok(())
+    }
+
     /// Executes one transaction in the batch executor, and then decides whether the batch should be sealed.
     /// Batch may be sealed because of one of the following reasons:
     /// 1. The VM entered an incorrect state (e.g. out of gas). In that case, we must revert the transaction and seal
@@ -918,6 +983,9 @@ impl StateKeeper {
         let updates_manager = &mut state.updates_manager;
         let batch_executor = state.batch_executor.as_mut();
 
+        // BabyDriver: detect first block of the batch BEFORE any tx runs.
+        let is_batch_start = updates_manager.pending_executed_transactions_len() == 0;
+
         if let Some(protocol_upgrade_tx) = state.protocol_upgrade_tx.take() {
             // Protocol upgrade tx if the first tx in the block so we shouldn't do `set_l2_block_params`.
             self.inner
@@ -945,6 +1013,19 @@ impl StateKeeper {
                 StateKeeperInner::start_next_l2_block(updates_manager, batch_executor).await?;
 
                 return Ok(());
+            }
+        }
+
+        // BabyDriver: Inject Oracle tx on first block of batch (after any upgrade tx)
+        if is_batch_start {
+            if let Some(oracle_calldata) = self.inner.io.get_oracle_tx_calldata() {
+                if let Err(e) = self
+                    .inner
+                    .process_oracle_tx(batch_executor, updates_manager, oracle_calldata)
+                    .await
+                {
+                    tracing::warn!("Oracle tx injection failed: {e:#}, continuing batch");
+                }
             }
         }
 

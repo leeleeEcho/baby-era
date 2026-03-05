@@ -448,6 +448,10 @@ impl StateKeeperIO for MempoolIO {
         );
         Ok(batch_state_hash)
     }
+
+    fn get_oracle_tx_calldata(&self) -> Option<Vec<u8>> {
+        self.get_oracle_calldata()
+    }
 }
 
 /// Sleeps until the current timestamp in seconds is larger than the provided `timestamp`.
