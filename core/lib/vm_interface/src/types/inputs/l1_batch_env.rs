@@ -23,12 +23,6 @@ pub struct L1BatchEnv {
     pub fee_account: Address,
     pub enforced_base_fee: Option<u64>,
     pub first_l2_block: L2BlockEnv,
-
-    /// BabyDriver: Pre-encoded ABI calldata for OracleHub.batchUpdatePrices().
-    /// Written to bootloader memory at ORACLE_CALLDATA_BEGIN_SLOT.
-    /// None or empty = skip Oracle update for this batch.
-    #[serde(default)]
-    pub oracle_calldata: Option<Vec<u8>>,
 }
 
 impl L1BatchEnv {

@@ -45,7 +45,6 @@ pub(crate) fn default_l1_batch_env(number: u32) -> L1BatchEnv {
             interop_roots: vec![],
         },
         fee_input: BatchFeeInput::sensible_l1_pegged_default(),
-        oracle_calldata: None,
     }
 }
 

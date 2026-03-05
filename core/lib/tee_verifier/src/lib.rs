@@ -344,7 +344,6 @@ mod tests {
                     max_virtual_blocks_to_create: 0,
                     interop_roots: vec![],
                 },
-                oracle_calldata: None,
             },
             SystemEnv {
                 zk_porter_available: false,

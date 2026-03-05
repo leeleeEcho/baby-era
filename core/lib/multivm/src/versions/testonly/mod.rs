@@ -196,7 +196,6 @@ pub(super) fn default_l1_batch(number: L1BatchNumber) -> L1BatchEnv {
             max_virtual_blocks_to_create: 100,
             interop_roots: vec![],
         },
-        oracle_calldata: None,
     }
 }
 

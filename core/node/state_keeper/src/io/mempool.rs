@@ -587,7 +587,6 @@ impl MempoolIO {
                 ),
                 pubdata_params: self.pubdata_params(protocol_version)?,
                 pubdata_limit: unsealed_storage_batch.pubdata_limit,
-                oracle_calldata: None,
             }));
         }
 
@@ -717,7 +716,6 @@ impl MempoolIO {
                 first_l2_block,
                 pubdata_params: self.pubdata_params(protocol_version)?,
                 pubdata_limit,
-                oracle_calldata: None,
             }));
         }
         Ok(None)

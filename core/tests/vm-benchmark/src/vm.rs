@@ -246,7 +246,6 @@ fn test_env() -> (SystemEnv, L1BatchEnv) {
             max_virtual_blocks_to_create: 100,
             interop_roots: vec![],
         },
-        oracle_calldata: None,
     };
     (system_env, l1_batch_env)
 }

@@ -192,7 +192,6 @@ fn default_l1_batch() -> L1BatchEnv {
             max_virtual_blocks_to_create: 100,
             interop_roots: vec![],
         },
-        oracle_calldata: None,
     }
 }
 

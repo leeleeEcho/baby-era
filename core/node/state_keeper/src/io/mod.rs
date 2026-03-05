@@ -127,8 +127,6 @@ pub struct L1BatchParams {
     pub pubdata_params: PubdataParams,
     /// Pubdata limit for the batch. It's set only if protocol version >= v29.
     pub pubdata_limit: Option<u64>,
-    /// BabyDriver: Pre-encoded ABI calldata for OracleHub.batchUpdatePrices().
-    pub oracle_calldata: Option<Vec<u8>>,
 }
 
 #[derive(Debug)]
@@ -148,7 +146,7 @@ impl L1BatchParams {
         cursor: &IoCursor,
         previous_batch_hash: H256,
     ) -> BatchInitParams {
-        let (system_env, mut l1_batch_env) = l1_batch_params(
+        let (system_env, l1_batch_env) = l1_batch_params(
             cursor.l1_batch,
             self.operator_address,
             self.first_l2_block.timestamp(),
@@ -163,9 +161,6 @@ impl L1BatchParams {
             chain_id,
             self.first_l2_block.interop_roots.clone(),
         );
-
-        // BabyDriver: Pass Oracle calldata to the VM batch environment
-        l1_batch_env.oracle_calldata = self.oracle_calldata;
 
         BatchInitParams {
             system_env,

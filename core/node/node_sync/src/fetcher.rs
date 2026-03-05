@@ -186,7 +186,6 @@ impl IoCursorExt for IoCursor {
                     ),
                     pubdata_params: block.pubdata_params,
                     pubdata_limit: block.pubdata_limit,
-                    oracle_calldata: None,
                 },
                 number: block.l1_batch_number,
                 first_l2_block_number: block.number,

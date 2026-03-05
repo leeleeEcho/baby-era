@@ -63,7 +63,6 @@ pub fn default_l1_batch_env(number: u32, timestamp: u64, fee_account: Address) -
             fair_pubdata_price: 1,
             l1_gas_price: 1,
         }),
-        oracle_calldata: None,
     }
 }
 

@@ -54,7 +54,6 @@ impl OutputHandlerTester {
                 max_virtual_blocks_to_create: 0,
                 interop_roots: vec![],
             },
-            oracle_calldata: None,
         };
         let system_env = SystemEnv {
             zk_porter_available: false,
