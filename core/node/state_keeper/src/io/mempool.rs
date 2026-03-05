@@ -30,6 +30,7 @@ use zksync_types::{
 use zksync_vm_executor::storage::{get_base_system_contracts_by_version_id, L1BatchParamsProvider};
 
 use baby_oracle_wiring::wiring::SharedOracleService;
+use zksync_crypto_primitives::K256PrivateKey;
 
 use crate::{
     io::{
@@ -76,6 +77,8 @@ pub struct MempoolIO {
     settlement_layer: Option<SettlementLayer>,
     /// BabyDriver: Shared Oracle service for price data injection.
     oracle_service: Option<SharedOracleService>,
+    /// BabyDriver: Operator private key for signing Oracle transactions.
+    operator_private_key: Option<K256PrivateKey>,
 }
 
 #[async_trait]
@@ -449,8 +452,16 @@ impl StateKeeperIO for MempoolIO {
         Ok(batch_state_hash)
     }
 
-    fn get_oracle_tx_calldata(&self) -> Option<Vec<u8>> {
-        self.get_oracle_calldata()
+    fn get_oracle_tx(&self) -> Option<Transaction> {
+        let calldata = self.get_oracle_calldata()?;
+        let private_key = self.operator_private_key.as_ref()?;
+        match crate::oracle_tx::build_oracle_update_tx(private_key, self.chain_id, calldata) {
+            Ok(tx) => Some(tx),
+            Err(e) => {
+                tracing::warn!("Failed to build Oracle tx: {e:#}");
+                None
+            }
+        }
     }
 }
 
@@ -516,6 +527,7 @@ impl MempoolIO {
         pubdata_type: PubdataType,
         settlement_layer: Option<SettlementLayer>,
         oracle_service: Option<SharedOracleService>,
+        operator_private_key: Option<K256PrivateKey>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             mempool,
@@ -538,6 +550,7 @@ impl MempoolIO {
             last_batch_protocol_version: None,
             settlement_layer,
             oracle_service,
+            operator_private_key,
         })
     }
 

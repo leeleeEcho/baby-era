@@ -717,12 +717,8 @@ impl StateKeeperInner {
         &mut self,
         batch_executor: &mut dyn BatchExecutor<OwnedStorage>,
         updates_manager: &mut UpdatesManager,
-        oracle_calldata: Vec<u8>,
+        tx: Transaction,
     ) -> anyhow::Result<()> {
-        use crate::oracle_tx::build_oracle_update_tx;
-
-        let operator_address = updates_manager.fee_account_address();
-        let tx = build_oracle_update_tx(operator_address, oracle_calldata);
 
         tracing::info!(
             "Injecting Oracle price update tx into batch {}",
@@ -1018,10 +1014,10 @@ impl StateKeeper {
 
         // BabyDriver: Inject Oracle tx on first block of batch (after any upgrade tx)
         if is_batch_start {
-            if let Some(oracle_calldata) = self.inner.io.get_oracle_tx_calldata() {
+            if let Some(oracle_tx) = self.inner.io.get_oracle_tx() {
                 if let Err(e) = self
                     .inner
-                    .process_oracle_tx(batch_executor, updates_manager, oracle_calldata)
+                    .process_oracle_tx(batch_executor, updates_manager, oracle_tx)
                     .await
                 {
                     tracing::warn!("Oracle tx injection failed: {e:#}, continuing batch");

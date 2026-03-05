@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Context as _;
 use baby_oracle_wiring::{OracleConfig, OracleWiringLayer};
+use zksync_crypto_primitives::K256PrivateKey;
 use zksync_config::configs::{
     chain::{MempoolConfig, StateKeeperConfig},
     wallets,
@@ -149,6 +150,24 @@ impl WiringLayer for MempoolIOLayer {
             Some(service)
         };
 
+        // BabyDriver: Load operator private key for signing Oracle transactions.
+        let operator_private_key = std::env::var("BABY_OPERATOR_KEY").ok().and_then(|key_hex| {
+            let key_hex = key_hex.strip_prefix("0x").unwrap_or(&key_hex);
+            let bytes = hex::decode(key_hex).ok()?;
+            if bytes.len() != 32 { return None; }
+            let h256 = zksync_types::H256::from_slice(&bytes);
+            match K256PrivateKey::from_bytes(h256) {
+                Ok(key) => {
+                    tracing::info!("Loaded operator key for Oracle tx signing (address: {:?})", key.address());
+                    Some(key)
+                }
+                Err(e) => {
+                    tracing::warn!("Invalid BABY_OPERATOR_KEY: {e}");
+                    None
+                }
+            }
+        });
+
         let io = MempoolIO::new(
             mempool_guard,
             batch_fee_input_provider,
@@ -161,6 +180,7 @@ impl WiringLayer for MempoolIOLayer {
             self.pubdata_type,
             input.settlement_mode.settlement_layer_for_sending_txs(),
             oracle_service,
+            operator_private_key,
         )?;
 
         // Create sealer.
