@@ -6,7 +6,7 @@
 
 use zksync_system_constants::ORACLE_HUB_ADDRESS;
 use zksync_types::{
-    fee::Fee, l2::L2Tx, Address, Nonce, U256,
+    fee::Fee, l2::L2Tx, web3::keccak256, Address, H256, Nonce, U256,
     transaction_request::PaymasterParams,
 };
 
@@ -29,9 +29,9 @@ pub fn build_oracle_update_tx(
     operator_address: Address,
     oracle_calldata: Vec<u8>,
 ) -> zksync_types::Transaction {
-    let l2_tx = L2Tx::new(
+    let mut l2_tx = L2Tx::new(
         Some(ORACLE_HUB_ADDRESS),
-        oracle_calldata,
+        oracle_calldata.clone(),
         Nonce(0),
         Fee {
             gas_limit: U256::from(ORACLE_TX_GAS_LIMIT),
@@ -44,6 +44,11 @@ pub fn build_oracle_update_tx(
         vec![],
         PaymasterParams::default(),
     );
+
+    // L2Tx requires `input` (raw bytes + hash) to be set before conversion.
+    // For this synthetic operator tx, compute hash from calldata.
+    let hash = H256(keccak256(&oracle_calldata));
+    l2_tx.set_input(oracle_calldata, hash);
 
     l2_tx.into()
 }
