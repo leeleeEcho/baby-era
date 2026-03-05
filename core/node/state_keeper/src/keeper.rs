@@ -1014,7 +1014,7 @@ impl StateKeeper {
 
         // BabyDriver: Inject Oracle tx on first block of batch (after any upgrade tx)
         if is_batch_start {
-            if let Some(oracle_tx) = self.inner.io.get_oracle_tx() {
+            if let Some(oracle_tx) = self.inner.io.get_oracle_tx().await {
                 if let Err(e) = self
                     .inner
                     .process_oracle_tx(batch_executor, updates_manager, oracle_tx)

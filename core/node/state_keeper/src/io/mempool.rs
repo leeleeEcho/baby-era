@@ -452,10 +452,37 @@ impl StateKeeperIO for MempoolIO {
         Ok(batch_state_hash)
     }
 
-    fn get_oracle_tx(&self) -> Option<Transaction> {
+    async fn get_oracle_tx(&self) -> Option<Transaction> {
         let calldata = self.get_oracle_calldata()?;
         let private_key = self.operator_private_key.as_ref()?;
-        match crate::oracle_tx::build_oracle_update_tx(private_key, self.chain_id, calldata) {
+
+        // Query operator nonce from DB at batch start (not cached at startup).
+        let operator_addr = private_key.address();
+        let nonce = match self.pool.connection_tagged("state_keeper").await {
+            Ok(mut storage) => {
+                match storage
+                    .storage_web3_dal()
+                    .get_nonces_for_addresses(&[operator_addr])
+                    .await
+                {
+                    Ok(nonces) => {
+                        let n = nonces.get(&operator_addr).map(|n| n.0).unwrap_or(0);
+                        zksync_types::Nonce(n)
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to query Oracle operator nonce: {e:#}");
+                        return None;
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::warn!("Failed to get DB connection for Oracle nonce: {e:#}");
+                return None;
+            }
+        };
+
+        tracing::info!("Building Oracle tx with nonce {}", nonce.0);
+        match crate::oracle_tx::build_oracle_update_tx(private_key, self.chain_id, nonce, calldata) {
             Ok(tx) => Some(tx),
             Err(e) => {
                 tracing::warn!("Failed to build Oracle tx: {e:#}");
@@ -753,8 +780,18 @@ impl MempoolIO {
     /// Returns None if Oracle is not configured or has no price data.
     pub(crate) fn get_oracle_calldata(&self) -> Option<Vec<u8>> {
         let service = self.oracle_service.as_ref()?;
-        let svc = service.lock().ok()?;
-        svc.encode_oracle_calldata()
+        let svc = match service.lock() {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::warn!("Oracle service mutex poisoned: {e}");
+                return None;
+            }
+        };
+        let calldata = svc.encode_oracle_calldata();
+        if calldata.is_none() {
+            tracing::debug!("Oracle calldata is None — prices not yet available");
+        }
+        calldata
     }
 }
 

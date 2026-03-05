@@ -15,6 +15,10 @@ use zksync_types::{
 /// Generous limit — operator doesn't actually pay gas.
 const ORACLE_TX_GAS_LIMIT: u64 = 5_000_000;
 
+/// Max fee per gas for the Oracle tx. Must be >= block.basefee or the VM
+/// will reject it. Set high enough to always pass (operator doesn't pay).
+const ORACLE_TX_MAX_FEE_PER_GAS: u64 = 250_000_000;
+
 /// Build a signed Oracle price update transaction.
 ///
 /// Returns a `Transaction` that calls `OracleHub.batchUpdatePrices()` with the
@@ -25,16 +29,17 @@ const ORACLE_TX_GAS_LIMIT: u64 = 5_000_000;
 pub fn build_oracle_update_tx(
     private_key: &K256PrivateKey,
     chain_id: L2ChainId,
+    nonce: Nonce,
     oracle_calldata: Vec<u8>,
 ) -> anyhow::Result<zksync_types::Transaction> {
     let l2_tx = L2Tx::new_signed(
         Some(ORACLE_HUB_ADDRESS),
         oracle_calldata,
-        Nonce(0),
+        nonce,
         Fee {
             gas_limit: U256::from(ORACLE_TX_GAS_LIMIT),
-            max_fee_per_gas: U256::from(0u64),
-            max_priority_fee_per_gas: U256::from(0u64),
+            max_fee_per_gas: U256::from(ORACLE_TX_MAX_FEE_PER_GAS),
+            max_priority_fee_per_gas: U256::from(ORACLE_TX_MAX_FEE_PER_GAS),
             gas_per_pubdata_limit: U256::from(800u64),
         },
         U256::zero(),
@@ -63,7 +68,7 @@ mod tests {
     #[test]
     fn test_build_oracle_tx_correct_target() {
         let calldata = vec![0x01, 0x02, 0x03, 0x04];
-        let tx = build_oracle_update_tx(&test_key(), test_chain_id(), calldata).unwrap();
+        let tx = build_oracle_update_tx(&test_key(), test_chain_id(), Nonce(0), calldata).unwrap();
         assert_eq!(tx.execute.contract_address, Some(ORACLE_HUB_ADDRESS));
     }
 
@@ -72,7 +77,7 @@ mod tests {
         let key = test_key();
         let expected_address = key.address();
         let calldata = vec![0xDE, 0xAD];
-        let tx = build_oracle_update_tx(&key, test_chain_id(), calldata).unwrap();
+        let tx = build_oracle_update_tx(&key, test_chain_id(), Nonce(0), calldata).unwrap();
         match &tx.common_data {
             ExecuteTransactionCommon::L2(data) => {
                 assert_eq!(data.initiator_address, expected_address);
@@ -84,21 +89,21 @@ mod tests {
     #[test]
     fn test_build_oracle_tx_correct_calldata() {
         let calldata = vec![0xAA, 0xBB, 0xCC, 0xDD, 0xEE];
-        let tx = build_oracle_update_tx(&test_key(), test_chain_id(), calldata.clone()).unwrap();
+        let tx = build_oracle_update_tx(&test_key(), test_chain_id(), Nonce(0), calldata.clone()).unwrap();
         assert_eq!(tx.execute.calldata, calldata);
     }
 
     #[test]
     fn test_build_oracle_tx_zero_value() {
         let calldata = vec![0x01];
-        let tx = build_oracle_update_tx(&test_key(), test_chain_id(), calldata).unwrap();
+        let tx = build_oracle_update_tx(&test_key(), test_chain_id(), Nonce(0), calldata).unwrap();
         assert_eq!(tx.execute.value, U256::zero());
     }
 
     #[test]
     fn test_build_oracle_tx_gas_limit() {
         let calldata = vec![0x01];
-        let tx = build_oracle_update_tx(&test_key(), test_chain_id(), calldata).unwrap();
+        let tx = build_oracle_update_tx(&test_key(), test_chain_id(), Nonce(0), calldata).unwrap();
         match &tx.common_data {
             ExecuteTransactionCommon::L2(data) => {
                 assert_eq!(data.fee.gas_limit, U256::from(ORACLE_TX_GAS_LIMIT));
@@ -110,7 +115,7 @@ mod tests {
     #[test]
     fn test_build_oracle_tx_large_calldata() {
         let calldata = vec![0x42; 12800];
-        let tx = build_oracle_update_tx(&test_key(), test_chain_id(), calldata.clone()).unwrap();
+        let tx = build_oracle_update_tx(&test_key(), test_chain_id(), Nonce(0), calldata.clone()).unwrap();
         assert_eq!(tx.execute.calldata.len(), 12800);
     }
 }

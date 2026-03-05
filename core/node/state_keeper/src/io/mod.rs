@@ -250,7 +250,7 @@ pub trait StateKeeperIO: 'static + Send + Sync + fmt::Debug + IoSealCriteria {
 
     /// BabyDriver: Get a signed Oracle price update transaction for the current batch.
     /// Returns None if Oracle is not configured or has no price data.
-    fn get_oracle_tx(&self) -> Option<Transaction> {
+    async fn get_oracle_tx(&self) -> Option<Transaction> {
         None // default: no Oracle
     }
 }
